@@ -1,0 +1,1 @@
+pub struct bitboard(pub u64);
