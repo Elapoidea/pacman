@@ -154,6 +154,26 @@ impl Board {
         m
     }
 
+    fn knight(&self, move_type: &MoveType, row: usize, col: usize) -> BitBoard {
+        let mut m: BitBoard = BitBoard(0);
+        let p = *&self.piece.location;
+        let c = 8-col+1;
+
+        println!("{} {}", c, row);
+
+        m |= if c < 7 && row < 8 {p << 6}  else {BitBoard(0)};
+        m |= if c > 2 && row < 8 {p << 10} else {BitBoard(0)};
+        m |= if c < 8 && row < 7 {p << 15} else {BitBoard(0)};
+        m |= if c > 1 && row < 7 {p << 17} else {BitBoard(0)};
+
+        m |= if c > 2 && row > 1 {p >> 6}  else {BitBoard(0)};
+        m |= if c < 7 && row > 1 {p >> 10} else {BitBoard(0)};
+        m |= if c > 1 && row > 2 {p >> 15} else {BitBoard(0)};
+        m |= if c < 8 && row > 2 {p >> 17} else {BitBoard(0)};
+
+        m
+    }
+
     pub fn moves(&self, move_type: MoveType) -> BitBoard {
         let row = *(&self.piece.get_row());
         let col = *(&self.piece.get_col());
@@ -162,7 +182,7 @@ impl Board {
             PieceType::Queen  => { self.queen (&move_type, row, col)},
             PieceType::Rook   => { self.rook  (&move_type, row, col) },
             PieceType::Bishop => { self.bishop(&move_type, row, col) },
-            PieceType::Knight => { BitBoard(0)},
+            PieceType::Knight => { self.knight(&move_type, row, col)},
         }
     }
 }

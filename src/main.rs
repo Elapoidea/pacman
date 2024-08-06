@@ -8,7 +8,7 @@ fn main() {
     println!("Hello, world!");
 
     let pawns: BitBoard = BitBoard(3498623452);
-    let piece: Piece = Piece::init(0, 27);
+    let piece: Piece = Piece::init(3, 60);
 
     let board: Board = Board::init(piece, pawns);
 
