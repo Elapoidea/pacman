@@ -4,11 +4,15 @@ use board::{Board, BitBoard, MoveType};
 mod piece;
 use piece::Piece;
 
+use rand::Rng;
+
 fn main() {
     println!("Hello, world!");
 
-    let pawns: BitBoard = BitBoard(3498623452);
-    let piece: Piece = Piece::init(3, 60);
+    let mut rng = rand::thread_rng();
+
+    let pawns: BitBoard = BitBoard(rng.gen::<u64>());
+    let piece: Piece = Piece::init(3, 0);
 
     let board: Board = Board::init(piece, pawns);
 
