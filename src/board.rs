@@ -1,7 +1,7 @@
 
 use std::{cmp, fmt};
 use crate::{piece::PieceType, Piece};
-use std::ops::{Shl,Shr,BitAnd,BitOr,BitOrAssign};
+use std::ops::{Shl,Shr,BitAnd,BitOr,BitOrAssign,Not};
 
 #[derive(Clone, Copy)]
 pub struct BitBoard(pub u64);
@@ -36,7 +36,7 @@ impl fmt::Display for BitBoard {
                 write!(f, "\n");
             }
            
-            write!(f, "{}", if i.1 == '1' {" ■ "} else {" • "});        
+            write!(f, "{}", if i.1 == '1' {"■ "} else {"• "});        
         }
 
         write!(f, "\n");
@@ -89,6 +89,14 @@ impl BitOrAssign for BitBoard {
     }
 }
 
+impl Not for BitBoard {
+    type Output = BitBoard;
+
+    fn not(self) -> Self {
+        BitBoard(!self.0)
+    }
+}
+
 pub struct Board {
     piece: Piece,
     pawns: BitBoard,
@@ -106,13 +114,13 @@ impl fmt::Display for Board {
             if i.0 == 63-self.piece.square {
                 write!(f, "{}",         
                     match self.piece.type_ {
-                        PieceType::Queen  => " ♕ ",
-                        PieceType::Rook   => " ♖ ",
-                        PieceType::Bishop => " ♗ ",
-                        PieceType::Knight => " ♘ ",
+                        PieceType::Queen  => "♕ ",
+                        PieceType::Rook   => "♖ ",
+                        PieceType::Bishop => "♗ ",
+                        PieceType::Knight => "♘ ",
                     });  
             } else {
-                write!(f, "{}", if i.1 == '1' {" ♟ "} else {" • "});  
+                write!(f, "{}", if i.1 == '1' {"♟ "} else {"• "});  
             }
                      
         }

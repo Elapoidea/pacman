@@ -11,10 +11,14 @@ fn main() {
 
     let mut rng = rand::thread_rng();
 
-    let pawns: BitBoard = BitBoard(rng.gen::<u64>());
-    let piece: Piece = Piece::init(3, 0);
+    let mut pawns: BitBoard = BitBoard(rng.gen::<u64>());
+
+    let piece: Piece = Piece::init(0, 28);
+
+    pawns = !piece.location & pawns;
 
     let board: Board = Board::init(piece, pawns);
 
-    println!("{}\n{}", board, board.moves(MoveType::Captures));
+    println!("{}", pawns);
+    println!("{}\n{}", board, board.moves(MoveType::CapturesOnly));
 }
