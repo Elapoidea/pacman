@@ -11,7 +11,7 @@ impl BitBoard {
         let mut v: Vec<u8> = vec![];
         let mut a = *&self.0;
 
-        for i in 0..64 {
+        for _ in 0..64 {
             v.push((a % 2) as u8);
             a = (a - a % 2) / 2
         }
@@ -29,6 +29,7 @@ impl BitBoard {
     }
 }
 
+#[allow(unused)]
 impl fmt::Display for BitBoard {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for i in &mut self.to_string().chars().into_iter().enumerate() {
@@ -102,10 +103,9 @@ pub struct Board {
     pawns: BitBoard,
 }
 
+#[allow(unused)]
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // write!(f, "♕♖♗♘♟︎(Pawns)\n{0}\n{1}", self.pawns, self.piece)
-
         for i in &mut self.pawns.to_string().chars().into_iter().enumerate() {
             if i.0 % 8 == 0 && i.0 > 0 {
                 write!(f, "\n");

@@ -13,8 +13,8 @@ pub enum PieceType {
 impl fmt::Display for PieceType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            Self::Queen => "Queen",
-            Self::Rook => "Rook",
+            Self::Queen  => "Queen",
+            Self::Rook   => "Rook",
             Self::Bishop => "Bishop",
             Self::Knight => "Knight",
         })
