@@ -98,6 +98,7 @@ impl Not for BitBoard {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct Board {
     piece: Piece,
     pawns: BitBoard,
@@ -139,7 +140,7 @@ impl Board {
         }
     }
 
-    fn generate_path(&self, move_type: &MoveType, range: usize, func: impl Fn(usize, BitBoard) -> BitBoard) -> BitBoard {
+    fn generate_move_board(&self, move_type: &MoveType, range: usize, func: impl Fn(usize, BitBoard) -> BitBoard) -> BitBoard {
         let mut result = BitBoard(0);
         
         for i in 1..=range {
@@ -182,16 +183,16 @@ impl Board {
         let mut m: BitBoard = BitBoard(0);
         
         // Down
-        m |= self.generate_path(&move_type, row-1,   |i: usize, b: BitBoard| -> BitBoard { b >> 8*i });
+        m |= self.generate_move_board(&move_type, row-1,   |i: usize, b: BitBoard| -> BitBoard { b >> 8*i });
 
         // Up
-        m |= self.generate_path(&move_type, 8-row,   |i, b| -> BitBoard { b << 8*i });
+        m |= self.generate_move_board(&move_type, 8-row,   |i, b| -> BitBoard { b << 8*i });
 
         // Right
-        m |= self.generate_path(&move_type, col-1,   |i, b| -> BitBoard { b >> i });
+        m |= self.generate_move_board(&move_type, col-1,   |i, b| -> BitBoard { b >> i });
 
         // Left
-        m |= self.generate_path(&move_type, 8-col,   |i, b| -> BitBoard { b << i });
+        m |= self.generate_move_board(&move_type, 8-col,   |i, b| -> BitBoard { b << i });
 
         m
     }
@@ -200,16 +201,16 @@ impl Board {
         let mut m: BitBoard = BitBoard(0);
         
         // Down left
-        m |= self.generate_path(&move_type, cmp::min(row, 8-col),   |i: usize, b: BitBoard| -> BitBoard { b >> 7*i });
+        m |= self.generate_move_board(&move_type, cmp::min(row, 8-col),   |i: usize, b: BitBoard| -> BitBoard { b >> 7*i });
 
         // Down right
-        m |= self.generate_path(&move_type, cmp::min(row, col)-1,   |i: usize, b: BitBoard| -> BitBoard { b >> 9*i });
+        m |= self.generate_move_board(&move_type, cmp::min(row, col)-1,   |i: usize, b: BitBoard| -> BitBoard { b >> 9*i });
 
         // Up right
-        m |= self.generate_path(&move_type, cmp::min(row, col)-1,   |i: usize, b: BitBoard| -> BitBoard { b << 7*i });
+        m |= self.generate_move_board(&move_type, cmp::min(row, col)-1,   |i: usize, b: BitBoard| -> BitBoard { b << 7*i });
 
         // Up left
-        m |= self.generate_path(&move_type, cmp::min(row, 8-col),   |i: usize, b: BitBoard| -> BitBoard { b << 9*i });
+        m |= self.generate_move_board(&move_type, cmp::min(row, 8-col),   |i: usize, b: BitBoard| -> BitBoard { b << 9*i });
 
         m
     }
@@ -253,8 +254,6 @@ impl Board {
         let moves = self.moves(MoveType::Moves);
         let n = moves.0.count_ones();
 
-        println!("{}", n);
-
         if n == 0 { 
             return Err("No legal moves!".to_string())
         }
@@ -278,7 +277,39 @@ impl Board {
         self.piece.make_move(s);
         self.pawns = !self.piece.location & self.pawns;
 
-        Ok(255)
+        Ok(s.into())
+    }
+
+    pub fn create_path(&mut self, n: usize) {
+        for _ in 0..100 {
+            let a = self.attempt_path(n);
+
+            match a {
+                Some(x) => {
+                    self.pawns = x.pawns;
+                    self.piece = x.piece;
+                    break;
+                },
+                None => {},
+            }
+        }
+    }
+
+    fn attempt_path(&mut self, n: usize) -> Option<Board> {
+        let mut b = *self;
+
+        for _ in 1..=n {
+            let last_position: BitBoard = b.piece.location;
+
+            match b.random_move() {
+                Err(_) => return None,
+                _ => {},
+            }
+
+            b.pawns |= last_position;
+        }
+
+        Some(b)
     }
 }
 

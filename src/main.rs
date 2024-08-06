@@ -11,7 +11,7 @@ fn main() {
 
     let mut pawns: BitBoard = BitBoard(0);
 
-    let piece: Piece = Piece::init(1, rng.gen_range(0..63));
+    let piece: Piece = Piece::init(2, rng.gen_range(0..63));
 
     pawns = !piece.location & pawns;
 
@@ -19,11 +19,12 @@ fn main() {
 
     println!("{}", board);
 
-    for _ in 0..10 {
-        board.random_move();
-        println!("{}", board);
-    }
+    // for _ in 0..10 {
+    //     board.random_move();
+    //     println!("{}", board);
+    // }
     
+    board.create_path(18);
 
-    
+    println!("{}", board);
 }
