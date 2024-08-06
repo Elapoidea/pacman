@@ -24,6 +24,7 @@ impl fmt::Display for PieceType {
 pub struct Piece {
     pub type_: PieceType,
     pub location: BitBoard,
+    square: usize,
 }
 
 impl fmt::Display for Piece {
@@ -42,7 +43,15 @@ impl Piece {
                 _ => PieceType::Queen,
             },
             location: BitBoard(2_u64.pow(square as u32)),
+            square: square as usize,
         }
     }
-}
 
+    pub fn get_col(&self) -> usize {
+        1 + &self.square % 8
+    }
+
+    pub fn get_row(&self) -> usize {
+        1 + &self.square / 8
+    }
+}

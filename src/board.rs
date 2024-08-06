@@ -16,6 +16,12 @@ impl fmt::Display for BitBoard {
     }
 }
 
+impl PartialEq for BitBoard {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
 impl Shl<usize> for BitBoard {
     type Output = BitBoard;
 
@@ -68,12 +74,52 @@ impl Board {
     }
 
     pub fn moves(&self) {
-        let mut m = *&self.piece.location;
+        let mut m: BitBoard = *&self.piece.location;
+        let c = *(&self.piece.get_col());
+        let r = *(&self.piece.get_row());
 
-        for i in 1..5 {
-            m = m | (*&self.piece.location << 8*i);
+        for i in 1..r {
+            let s = *&self.piece.location >> 8*i;
+
+            if s & *&self.pawns != BitBoard(0) {
+                break;
+            }
+
+            m = m | s;
         }
-        println!("aaa{}",  m);
+
+        for i in 1..=8-r {
+            let s = *&self.piece.location << 8*i;
+
+            if s & *&self.pawns != BitBoard(0) {
+                break;
+            }
+
+            m = m | s;
+        }
+
+        for i in 1..c {
+            let s = *&self.piece.location >> i;
+
+            if s & *&self.pawns != BitBoard(0) {
+                break;
+            }
+
+            m = m | s;
+        }
+
+        for i in 1..=8-c {
+            let s = *&self.piece.location << i;
+
+            if s & *&self.pawns != BitBoard(0) {
+                break;
+            }
+
+            m = m | s;
+        }
+
+        println!("{} {}",  c, 8-r);
+        println!("{}\n{}",  *&self, m);
     }
 }
 
