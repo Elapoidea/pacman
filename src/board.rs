@@ -232,6 +232,7 @@ impl Board {
 
         match move_type {
             MoveType::CapturesOnly => m & *&self.pawns,
+            MoveType::Moves => m & !*&self.pawns,
             _ => m,
         }
     }
@@ -281,11 +282,12 @@ impl Board {
     }
 
     pub fn create_path(&mut self, n: usize) {
-        for _ in 0..100 {
+        for i in 0..1000 {
             let a = self.attempt_path(n);
 
             match a {
                 Some(x) => {
+                    println!("{}\n{}", i, x.pawns);
                     self.pawns = x.pawns;
                     self.piece = x.piece;
                     break;
