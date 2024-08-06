@@ -79,35 +79,51 @@ impl Board {
         }
     }
 
-    fn generate_path(&self, range: usize, func: impl Fn(usize, BitBoard) -> BitBoard) -> BitBoard {
+    fn generate_path(&self, move_type: &MoveType, range: usize, func: impl Fn(usize, BitBoard) -> BitBoard) -> BitBoard {
         let mut result = BitBoard(0);
         
         for i in 1..range {
             let s = func(i, *&self.piece.location);
+            let empty = s & *&self.pawns == BitBoard(0);
 
-            println!("result{}", s);
+            match move_type {
+                MoveType::Captures => {
+                    result = result | s;
+                    
+                    if !empty {
+                        break;
+                    }
+                },
+                MoveType::CapturesOnly => {
+                    if !empty {
+                        result = result | s;
 
-            if s & *&self.pawns != BitBoard(0) {
-                break;
-            }
-
-            result = result | s;
-        }
-
+                        break;
+                    }
+                },
+                MoveType::Moves => {
+                    if !empty {
+                        break;
+                    }
         
+                    result = result | s;
+                },
+            }
+        }
 
         result
     }
 
     pub fn moves(&self) {
+        let move_type = MoveType::Moves;
         let mut m: BitBoard = BitBoard(0);
         let c = *(&self.piece.get_col());
         let r = *(&self.piece.get_row());
 
-        m |= self.generate_path(r,   |i: usize, b: BitBoard| -> BitBoard { b >> 8*i });
-        m |= self.generate_path(9-r, |i, b| -> BitBoard { b << 8*i });
-        m |= self.generate_path(c,   |i, b| -> BitBoard { b >> i });
-        m |= self.generate_path(9-c, |i, b| -> BitBoard { b << i });
+        m |= self.generate_path(&move_type,r,   |i: usize, b: BitBoard| -> BitBoard { b >> 8*i });
+        m |= self.generate_path(&move_type, 9-r, |i, b| -> BitBoard { b << 8*i });
+        m |= self.generate_path(&move_type, c,   |i, b| -> BitBoard { b >> i });
+        m |= self.generate_path(&move_type, 9-c, |i, b| -> BitBoard { b << i });
 
 
         println!("{} {}",  c, 8-r);
@@ -115,3 +131,8 @@ impl Board {
     }
 }
 
+enum MoveType {
+    Captures,
+    CapturesOnly,
+    Moves,
+}
