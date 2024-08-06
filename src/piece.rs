@@ -21,8 +21,10 @@ impl fmt::Display for PieceType {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct Piece {
     pub type_: PieceType,
+    id: u8,
     pub location: BitBoard,
     pub square: usize,
 }
@@ -42,9 +44,17 @@ impl Piece {
                 3 => PieceType::Knight,
                 _ => PieceType::Queen,
             },
+            id: id,
             location: BitBoard(2_u64.pow(square as u32)),
             square: square as usize,
         }
+    }
+
+    pub fn make_move(&mut self, square: u8) {
+        let new = Self::init(self.id, square);
+
+        self.location = new.location;
+        self.square = new.square;
     }
 
     pub fn get_col(&self) -> usize {

@@ -9,13 +9,21 @@ use rand::Rng;
 fn main() {
     let mut rng = rand::thread_rng();
 
-    let mut pawns: BitBoard = BitBoard(rng.gen::<u64>());
+    let mut pawns: BitBoard = BitBoard(0);
 
-    let piece: Piece = Piece::init(0, rng.gen_range(0..63));
+    let piece: Piece = Piece::init(1, rng.gen_range(0..63));
 
     pawns = !piece.location & pawns;
 
-    let board: Board = Board::init(piece, pawns);
+    let mut board: Board = Board::init(piece, pawns);
 
-    println!("{}\n{}", board, board.moves(MoveType::Moves));
+    println!("{}", board);
+
+    for _ in 0..10 {
+        board.random_move();
+        println!("{}", board);
+    }
+    
+
+    
 }

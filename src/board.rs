@@ -2,12 +2,13 @@
 use std::{cmp, fmt};
 use crate::{piece::PieceType, Piece};
 use std::ops::{Shl,Shr,BitAnd,BitOr,BitOrAssign,Not};
+use rand::Rng;
 
 #[derive(Clone, Copy)]
 pub struct BitBoard(pub u64);
 
 impl BitBoard {
-    fn to_string(&self) -> String {
+    pub fn to_string(&self) -> String {
         let mut v: Vec<u8> = vec![];
         let mut a = *&self.0;
 
@@ -25,7 +26,6 @@ impl BitBoard {
         }
 
         s
-
     }
 }
 
@@ -245,6 +245,40 @@ impl Board {
             PieceType::Bishop => { self.bishop(&move_type, row, col) },
             PieceType::Knight => { self.knight(&move_type, row, col)},
         }
+    }
+
+    pub fn random_move(&mut self) -> Result<u64, String> {
+        let mut rng = rand::thread_rng();
+
+        let moves = self.moves(MoveType::Moves);
+        let n = moves.0.count_ones();
+
+        println!("{}", n);
+
+        if n == 0 { 
+            return Err("No legal moves!".to_string())
+        }
+
+        let r = rng.gen_range(1..=n);
+        let mut s: u8 = 0;
+
+        let mut c = 0;
+
+        for i in &mut moves.to_string().chars().into_iter().enumerate() {
+            if i.1 == '1' {
+                c += 1;
+            }
+
+            if c == r {
+                s = 63 - i.0 as u8;
+                break;
+            }
+        }
+
+        self.piece.make_move(s);
+        self.pawns = !self.piece.location & self.pawns;
+
+        Ok(255)
     }
 }
 
