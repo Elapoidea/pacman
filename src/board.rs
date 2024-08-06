@@ -1,6 +1,6 @@
 
-use std::{collections::btree_map::Range, fmt};
-use crate::Piece;
+use std::{cmp, fmt};
+use crate::{piece::PieceType, Piece};
 use std::ops::{Shl,Shr,BitAnd,BitOr,BitOrAssign};
 
 #[derive(Clone, Copy)]
@@ -82,7 +82,7 @@ impl Board {
     fn generate_path(&self, move_type: &MoveType, range: usize, func: impl Fn(usize, BitBoard) -> BitBoard) -> BitBoard {
         let mut result = BitBoard(0);
         
-        for i in 1..range {
+        for i in 1..=range {
             let s = func(i, *&self.piece.location);
             let empty = s & *&self.pawns == BitBoard(0);
 
@@ -114,24 +114,50 @@ impl Board {
         result
     }
 
-    pub fn moves(&self) {
-        let move_type = MoveType::Moves;
+    fn rook(&self, move_type: MoveType, row: usize, col: usize) -> BitBoard {
         let mut m: BitBoard = BitBoard(0);
-        let c = *(&self.piece.get_col());
-        let r = *(&self.piece.get_row());
+        
+        m |= self.generate_path(&move_type, row-1,   |i: usize, b: BitBoard| -> BitBoard { b >> 8*i });
+        m |= self.generate_path(&move_type, 8-row,   |i, b| -> BitBoard { b << 8*i });
+        m |= self.generate_path(&move_type, col-1,   |i, b| -> BitBoard { b >> i });
+        m |= self.generate_path(&move_type, 8-col,   |i, b| -> BitBoard { b << i });
 
-        m |= self.generate_path(&move_type,r,   |i: usize, b: BitBoard| -> BitBoard { b >> 8*i });
-        m |= self.generate_path(&move_type, 9-r, |i, b| -> BitBoard { b << 8*i });
-        m |= self.generate_path(&move_type, c,   |i, b| -> BitBoard { b >> i });
-        m |= self.generate_path(&move_type, 9-c, |i, b| -> BitBoard { b << i });
+        m
+    }
 
+    fn bishop(&self, move_type: MoveType, row: usize, col: usize) -> BitBoard {
+        let mut m: BitBoard = BitBoard(0);
+        
+        // Down left
+        m |= self.generate_path(&move_type, cmp::min(row, 8-col),   |i: usize, b: BitBoard| -> BitBoard { b >> 7*i });
 
-        println!("{} {}",  c, 8-r);
-        println!("{}\n{}",  *&self, m);
+        // Down right
+        m |= self.generate_path(&move_type, cmp::min(row, col)-1,   |i: usize, b: BitBoard| -> BitBoard { b >> 9*i });
+
+        // Up right
+        m |= self.generate_path(&move_type, cmp::min(row, col)-1,   |i: usize, b: BitBoard| -> BitBoard { b << 7*i });
+
+        // Up left
+        m |= self.generate_path(&move_type, cmp::min(row, 8-col),   |i: usize, b: BitBoard| -> BitBoard { b << 9*i });
+
+        m
+    }
+
+    pub fn moves(&self, move_type: MoveType) -> BitBoard {
+        let row = *(&self.piece.get_row());
+        let col = *(&self.piece.get_col());
+
+        match self.piece.type_ {
+            PieceType::Queen  => { BitBoard(0)},
+            PieceType::Rook   => { self.rook  (move_type, row, col) },
+            PieceType::Bishop => { self.bishop(move_type, row, col) },
+            PieceType::Knight => { BitBoard(0)},
+        }
     }
 }
 
-enum MoveType {
+#[allow(dead_code)]
+pub enum MoveType {
     Captures,
     CapturesOnly,
     Moves,

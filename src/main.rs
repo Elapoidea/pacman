@@ -1,5 +1,5 @@
 mod board;
-use board::{Board, BitBoard};
+use board::{Board, BitBoard, MoveType};
 
 mod piece;
 use piece::Piece;
@@ -7,14 +7,10 @@ use piece::Piece;
 fn main() {
     println!("Hello, world!");
 
-    let pawns: BitBoard = BitBoard(23659295935);
-    let piece: Piece = Piece::init(1, 28);
+    let pawns: BitBoard = BitBoard(3498623452);
+    let piece: Piece = Piece::init(2, 27);
 
     let board: Board = Board::init(piece, pawns);
 
-    // println!("{}", board);
-
-    board.moves();
-
-    // println!("{}", board);
+    println!("{}\n{}", board, board.moves(MoveType::Moves));
 }

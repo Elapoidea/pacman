@@ -8,3 +8,8 @@
 1    7   6   5   4   3   2   1   0
 
      a   b   c   d   e   f   g   h
+
+0 Queen
+1 Rook
+2 Bishop
+3 Knight

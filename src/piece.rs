@@ -3,7 +3,7 @@ use crate::BitBoard;
 use std::fmt;
 
 #[derive(Clone, Copy)]
-enum PieceType {
+pub enum PieceType {
     Queen,
     Rook,
     Bishop,
