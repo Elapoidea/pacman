@@ -114,18 +114,29 @@ impl Board {
         result
     }
 
-    fn rook(&self, move_type: MoveType, row: usize, col: usize) -> BitBoard {
+    fn queen(&self, move_type: &MoveType, row: usize, col: usize) -> BitBoard {
+        self.rook (move_type, row, col) | self.bishop(move_type, row, col)
+    }
+
+    fn rook(&self, move_type: &MoveType, row: usize, col: usize) -> BitBoard {
         let mut m: BitBoard = BitBoard(0);
         
+        // Down
         m |= self.generate_path(&move_type, row-1,   |i: usize, b: BitBoard| -> BitBoard { b >> 8*i });
+
+        // Up
         m |= self.generate_path(&move_type, 8-row,   |i, b| -> BitBoard { b << 8*i });
+
+        // Right
         m |= self.generate_path(&move_type, col-1,   |i, b| -> BitBoard { b >> i });
+
+        // Left
         m |= self.generate_path(&move_type, 8-col,   |i, b| -> BitBoard { b << i });
 
         m
     }
 
-    fn bishop(&self, move_type: MoveType, row: usize, col: usize) -> BitBoard {
+    fn bishop(&self, move_type: &MoveType, row: usize, col: usize) -> BitBoard {
         let mut m: BitBoard = BitBoard(0);
         
         // Down left
@@ -148,9 +159,9 @@ impl Board {
         let col = *(&self.piece.get_col());
 
         match self.piece.type_ {
-            PieceType::Queen  => { BitBoard(0)},
-            PieceType::Rook   => { self.rook  (move_type, row, col) },
-            PieceType::Bishop => { self.bishop(move_type, row, col) },
+            PieceType::Queen  => { self.queen (&move_type, row, col)},
+            PieceType::Rook   => { self.rook  (&move_type, row, col) },
+            PieceType::Bishop => { self.bishop(&move_type, row, col) },
             PieceType::Knight => { BitBoard(0)},
         }
     }
