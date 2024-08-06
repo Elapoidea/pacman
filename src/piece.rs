@@ -25,6 +25,12 @@ pub struct Piece {
     location: BitBoard,
 }
 
+impl fmt::Display for Piece {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "({0})\n{1}", self.type_, self.location)
+    }
+}
+
 impl Piece {
     pub fn init(id: u8, square: u8) -> Self {
         Self {
@@ -39,8 +45,3 @@ impl Piece {
     }
 }
 
-impl fmt::Display for Piece {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "({0})\n{1}", self.type_, self.location)
-    }
-}

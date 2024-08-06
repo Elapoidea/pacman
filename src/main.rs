@@ -1,5 +1,5 @@
-mod bitboard;
-use bitboard::BitBoard;
+mod board;
+use board::{Board, BitBoard};
 
 mod piece;
 use piece::Piece;
@@ -7,10 +7,10 @@ use piece::Piece;
 fn main() {
     println!("Hello, world!");
 
-    let x = BitBoard(256);
-    println!("{}", x);
+    let pawns: BitBoard = BitBoard(600);
+    let piece: Piece = Piece::init(1, 5);
 
-    let p: Piece = Piece::init(1, 5);
+    let board: Board = Board::init(piece, pawns);
 
-    println!("{}", p);
+    println!("{}", board);
 }
