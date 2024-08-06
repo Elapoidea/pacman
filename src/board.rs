@@ -159,8 +159,6 @@ impl Board {
         let p = *&self.piece.location;
         let c = 8-col+1;
 
-        println!("{} {}", c, row);
-
         m |= if c < 7 && row < 8 {p << 6}  else {BitBoard(0)};
         m |= if c > 2 && row < 8 {p << 10} else {BitBoard(0)};
         m |= if c < 8 && row < 7 {p << 15} else {BitBoard(0)};
@@ -171,7 +169,10 @@ impl Board {
         m |= if c > 1 && row > 2 {p >> 15} else {BitBoard(0)};
         m |= if c < 8 && row > 2 {p >> 17} else {BitBoard(0)};
 
-        m
+        match move_type {
+            MoveType::CapturesOnly => m & *&self.pawns,
+            _ => m,
+        }
     }
 
     pub fn moves(&self, move_type: MoveType) -> BitBoard {
