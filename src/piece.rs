@@ -24,7 +24,7 @@ impl fmt::Display for PieceType {
 pub struct Piece {
     pub type_: PieceType,
     pub location: BitBoard,
-    square: usize,
+    pub square: usize,
 }
 
 impl fmt::Display for Piece {

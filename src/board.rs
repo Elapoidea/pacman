@@ -6,11 +6,40 @@ use std::ops::{Shl,Shr,BitAnd,BitOr,BitOrAssign};
 #[derive(Clone, Copy)]
 pub struct BitBoard(pub u64);
 
+impl BitBoard {
+    fn to_string(&self) -> String {
+        let mut v: Vec<u8> = vec![];
+        let mut a = *&self.0;
+
+        for i in 0..64 {
+            v.push((a % 2) as u8);
+            a = (a - a % 2) / 2
+        }
+
+        let mut s: String = String::from("");
+
+        v.reverse();
+
+        for d in v {
+            s += &d.to_string();
+        }
+
+        s
+
+    }
+}
+
 impl fmt::Display for BitBoard {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for i in self.0.to_be_bytes() {
-            write!(f, "{0}{i:b}\n", (0..(7-i.checked_ilog2().unwrap_or(0))).map(|_| "0").collect::<String>());
+        for i in &mut self.to_string().chars().into_iter().enumerate() {
+            if i.0 % 8 == 0 && i.0 > 0 {
+                write!(f, "\n");
+            }
+           
+            write!(f, "{}", if i.1 == '1' {" ■ "} else {" • "});        
         }
+
+        write!(f, "\n");
 
         Ok(())
     }
@@ -67,7 +96,30 @@ pub struct Board {
 
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "(Pawns)\n{0}\n{1}", self.pawns, self.piece)
+        // write!(f, "♕♖♗♘♟︎(Pawns)\n{0}\n{1}", self.pawns, self.piece)
+
+        for i in &mut self.pawns.to_string().chars().into_iter().enumerate() {
+            if i.0 % 8 == 0 && i.0 > 0 {
+                write!(f, "\n");
+            }
+           
+            if i.0 == 63-self.piece.square {
+                write!(f, "{}",         
+                    match self.piece.type_ {
+                        PieceType::Queen  => " ♕ ",
+                        PieceType::Rook   => " ♖ ",
+                        PieceType::Bishop => " ♗ ",
+                        PieceType::Knight => " ♘ ",
+                    });  
+            } else {
+                write!(f, "{}", if i.1 == '1' {" ♟ "} else {" • "});  
+            }
+                     
+        }
+
+        write!(f, "\n");
+
+        Ok(())
     }
 }
 
