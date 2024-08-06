@@ -1,7 +1,7 @@
 
-use std::fmt;
+use std::{collections::btree_map::Range, fmt};
 use crate::Piece;
-use std::ops::{Shl,Shr,BitAnd,BitOr};
+use std::ops::{Shl,Shr,BitAnd,BitOr,BitOrAssign};
 
 #[derive(Clone, Copy)]
 pub struct BitBoard(pub u64);
@@ -54,6 +54,12 @@ impl BitOr for BitBoard {
     }
 }
 
+impl BitOrAssign for BitBoard {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0 |= rhs.0;
+    }
+}
+
 pub struct Board {
     piece: Piece,
     pawns: BitBoard,
@@ -73,50 +79,36 @@ impl Board {
         }
     }
 
+    fn generate_path(&self, range: usize, func: impl Fn(usize, BitBoard) -> BitBoard) -> BitBoard {
+        let mut result = BitBoard(0);
+        
+        for i in 1..range {
+            let s = func(i, *&self.piece.location);
+
+            println!("result{}", s);
+
+            if s & *&self.pawns != BitBoard(0) {
+                break;
+            }
+
+            result = result | s;
+        }
+
+        
+
+        result
+    }
+
     pub fn moves(&self) {
-        let mut m: BitBoard = *&self.piece.location;
+        let mut m: BitBoard = BitBoard(0);
         let c = *(&self.piece.get_col());
         let r = *(&self.piece.get_row());
 
-        for i in 1..r {
-            let s = *&self.piece.location >> 8*i;
+        m |= self.generate_path(r,   |i: usize, b: BitBoard| -> BitBoard { b >> 8*i });
+        m |= self.generate_path(9-r, |i, b| -> BitBoard { b << 8*i });
+        m |= self.generate_path(c,   |i, b| -> BitBoard { b >> i });
+        m |= self.generate_path(9-c, |i, b| -> BitBoard { b << i });
 
-            if s & *&self.pawns != BitBoard(0) {
-                break;
-            }
-
-            m = m | s;
-        }
-
-        for i in 1..=8-r {
-            let s = *&self.piece.location << 8*i;
-
-            if s & *&self.pawns != BitBoard(0) {
-                break;
-            }
-
-            m = m | s;
-        }
-
-        for i in 1..c {
-            let s = *&self.piece.location >> i;
-
-            if s & *&self.pawns != BitBoard(0) {
-                break;
-            }
-
-            m = m | s;
-        }
-
-        for i in 1..=8-c {
-            let s = *&self.piece.location << i;
-
-            if s & *&self.pawns != BitBoard(0) {
-                break;
-            }
-
-            m = m | s;
-        }
 
         println!("{} {}",  c, 8-r);
         println!("{}\n{}",  *&self, m);
