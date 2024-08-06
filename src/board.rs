@@ -1,7 +1,7 @@
 
 use std::fmt;
 use crate::Piece;
-use std::ops::{Shl,Shr,BitAnd};
+use std::ops::{Shl,Shr,BitAnd,BitOr};
 
 #[derive(Clone, Copy)]
 pub struct BitBoard(pub u64);
@@ -40,6 +40,14 @@ impl BitAnd for BitBoard {
     }
 }
 
+impl BitOr for BitBoard {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self(self.0 | rhs.0)
+    }
+}
+
 pub struct Board {
     piece: Piece,
     pawns: BitBoard,
@@ -60,7 +68,12 @@ impl Board {
     }
 
     pub fn moves(&self) {
-        println!("aaa{}", *&self.piece.location >> 2 & *&self.pawns);
+        let mut m = *&self.piece.location;
+
+        for i in 1..5 {
+            m = m | (*&self.piece.location << 8*i);
+        }
+        println!("aaa{}",  m);
     }
 }
 
