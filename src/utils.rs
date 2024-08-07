@@ -1,5 +1,9 @@
 use crate::Board;
 
+pub fn coordinate(square: u8) -> String {
+    ["a", "b", "c", "d", "e", "f", "g", "h"][8-(1 + square as usize % 8)].to_owned() + ["1", "2", "3", "4", "5", "6", "7", "8"][square as usize / 8]
+}
+
 pub fn fen (position: Board) -> String {
     let mut f = String::from("");
     let mut space = 0;
