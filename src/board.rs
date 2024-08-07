@@ -3,6 +3,8 @@ use std::{cmp, fmt};
 use crate::{piece::PieceType, Piece};
 use std::ops::{Shl,Shr,BitAnd,BitOr,BitOrAssign,Not};
 use rand::Rng;
+use std::collections::HashMap;
+use itertools::Itertools;
 
 #[derive(Clone, Copy)]
 pub struct BitBoard(pub u64);
@@ -100,8 +102,9 @@ impl Not for BitBoard {
 
 #[derive(Clone, Copy)]
 pub struct Board {
-    piece: Piece,
-    pawns: BitBoard,
+    pub piece: Piece,
+    path: [u8; 64],
+    pub pawns: BitBoard,
 }
 
 #[allow(unused)]
@@ -135,8 +138,9 @@ impl fmt::Display for Board {
 impl Board {
     pub fn init(piece: Piece, pawns: BitBoard) -> Self {
         Self {
-            piece,
-            pawns
+            piece: piece,
+            path: [100; 64],
+            pawns: pawns,
         }
     }
 
@@ -200,17 +204,24 @@ impl Board {
     fn bishop(&self, move_type: &MoveType, row: usize, col: usize) -> BitBoard {
         let mut m: BitBoard = BitBoard(0);
         
-        // Down left
-        m |= self.generate_move_board(&move_type, cmp::min(row, 8-col),   |i: usize, b: BitBoard| -> BitBoard { b >> 7*i });
+        // UL
+        m |= self.generate_move_board(&move_type, cmp::min(8-row, 8-col),   |i: usize, b: BitBoard| -> BitBoard { b << 9*i });
 
-        // Down right
-        m |= self.generate_move_board(&move_type, cmp::min(row, col)-1,   |i: usize, b: BitBoard| -> BitBoard { b >> 9*i });
+        // UR
+        m |= self.generate_move_board(&move_type, cmp::min(8-row, col-1),   |i: usize, b: BitBoard| -> BitBoard { b << 7*i });
 
-        // Up right
-        m |= self.generate_move_board(&move_type, cmp::min(row, col)-1,   |i: usize, b: BitBoard| -> BitBoard { b << 7*i });
+        // DL PROBLEM
+        m |= self.generate_move_board(&move_type, cmp::min(row-1, 8-col),   |i: usize, b: BitBoard| -> BitBoard { b >> 7*i });
 
-        // Up left
-        m |= self.generate_move_board(&move_type, cmp::min(row, 8-col),   |i: usize, b: BitBoard| -> BitBoard { b << 9*i });
+        // DR
+        m |= self.generate_move_board(&move_type, cmp::min(row-1, col-1),   |i: usize, b: BitBoard| -> BitBoard { b >> 9*i });
+
+        // println!("m\n{}", m);
+        // println!("UL{}", cmp::min(8-row, 8-col));
+        // println!("UR{}", cmp::min(8-row, col-1));
+        // println!("DL{}", cmp::min(row-1, 8-col));
+        // println!("DR{}", cmp::min(row-1, col-1));
+        // println!("Row: {} Col: {}\n\n", row, col);
 
         m
     }
@@ -249,13 +260,14 @@ impl Board {
         }
     }
 
-    pub fn random_move(&mut self) -> Result<u64, String> {
+    pub fn random_move(&mut self, move_type: MoveType) -> Result<u64, String> {
         let mut rng = rand::thread_rng();
 
-        let moves = self.moves(MoveType::Moves);
+        let moves = self.moves(move_type);
         let n = moves.0.count_ones();
 
         if n == 0 { 
+            // println!("Fail at random_move\n{}\n", self);
             return Err("No legal moves!".to_string())
         }
 
@@ -277,19 +289,21 @@ impl Board {
 
         self.piece.make_move(s);
         self.pawns = !self.piece.location & self.pawns;
+        self.path[self.path.iter().position(|&x| x == 100).unwrap()] = s;
 
         Ok(s.into())
     }
 
     pub fn create_path(&mut self, n: usize) {
-        for i in 0..1000 {
+        for i in 1..=10000 {
             let a = self.attempt_path(n);
 
             match a {
                 Some(x) => {
-                    println!("{}\n{}", i, x.pawns);
                     self.pawns = x.pawns;
                     self.piece = x.piece;
+                    self.path = x.path;
+                    // println!("\n{:?}", self.path.iter().filter(|&&x| x != 100).map(|x| *x).collect::<Vec<u8>>());
                     break;
                 },
                 None => {},
@@ -299,19 +313,87 @@ impl Board {
 
     fn attempt_path(&mut self, n: usize) -> Option<Board> {
         let mut b = *self;
+        b.path[0] = b.piece.square as u8;
 
-        for _ in 1..=n {
+
+        for i in 1..=n {
             let last_position: BitBoard = b.piece.location;
 
-            match b.random_move() {
-                Err(_) => return None,
-                _ => {},
+            match b.random_move(MoveType::Moves) {
+                Err(e) => {return None},
+                Ok(s) => {b.path[i] = s as u8},
             }
 
             b.pawns |= last_position;
         }
 
         Some(b)
+    }
+
+    pub fn get_path(&self) -> Vec<u8> {
+        self.path.iter().filter(|&&x| x != 100).map(|x| *x).collect()
+    }
+
+    pub fn attempt_solution(&self) -> bool {
+        let mut solution: Vec<u8> = self.get_path();
+        solution.reverse();
+
+        if solution.len() == 0 {
+            println!("Something went wrong!: {:?}\n", solution);
+            println!("{} {}", self.piece.get_row(), self.piece.get_col());
+            println!("{}", self);
+            println!("{:?}", self.path);
+        }
+
+
+        solution.remove(0);
+        
+
+        let mut j = 0;
+
+        use std::time::Instant;
+        let now = Instant::now();
+
+        for i in 0..100000 {
+            let mut a = Board::init(self.piece, self.pawns);
+            let mut p: Vec<u8> = vec![];
+
+            loop {
+                match a.random_move(MoveType::CapturesOnly) {
+                    Err(_) => {p = a.get_path(); break},
+                    Ok(_) => {},
+                }
+            }
+
+            if p.len() == solution.len() && p != solution {
+                // println!("Another solution was found: {:?}", p);
+                // println!("{:?}", p);
+
+                // if p == [] {
+                //     println!("a\n{}{:?}\n", a, a.path);
+                //     println!("b\n{}", a.moves(MoveType::Captures));
+                // }
+
+                // println!("p{:?}\ns{:?}", p, solution);
+
+                // println!("{}", self);
+                // let elapsed = now.elapsed();
+                // println!("Elapsed1: {:.2?}", elapsed);
+
+                return false;
+            }
+
+            j = i;
+        }
+
+        // println!("\n{:?}", solution);
+
+        let elapsed = now.elapsed();
+        println!("Elapsed2: {:.2?}", elapsed);
+
+        println!("{}", j);
+
+        true
     }
 }
 

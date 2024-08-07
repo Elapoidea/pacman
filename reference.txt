@@ -14,3 +14,5 @@
 1 Rook
 2 Bishop
 3 Knight
+
+The problem is that every attempt to create a full path can fail. 
