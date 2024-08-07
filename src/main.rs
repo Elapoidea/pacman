@@ -37,11 +37,12 @@ fn main() {
     
         let mut board: Board = Board::init(piece, pawns);
 
-        board.create_path(20);
+        board.create_path(16);
 
         let s = board.attempt_solution();
 
         if s {
+            println!("{}", fen(board));
             println!("This has exactly one solution: \n{:?}\n{}\n{}", 
             board.get_path().into_iter().rev().map(
                 |x| 
