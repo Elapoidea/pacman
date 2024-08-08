@@ -5,7 +5,7 @@ use std::ops::{Shl,Shr,BitAnd,BitOr,BitOrAssign,Not};
 use rand::Rng;
 use std::collections::HashMap;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, Hash, Eq)]
 pub struct BitBoard(pub u64);
 
 impl BitBoard {
@@ -99,10 +99,10 @@ impl Not for BitBoard {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Board {
     pub piece: Piece,
-    pub path: [u8; 64],
+    // pub path: [u8; 64],
     pub pawns: BitBoard,
 }
 
@@ -138,7 +138,7 @@ impl Board {
     pub fn init(piece: Piece, pawns: BitBoard) -> Self {
         Self {
             piece,
-            path: [100; 64],
+            // path: [100; 64],
             pawns,
         }
     }
@@ -266,7 +266,6 @@ impl Board {
         let n = moves.0.count_ones();
 
         if n == 0 { 
-            // println!("Fail at random_move\n{}\n", self);
             return Err("No legal moves!".to_string())
         }
 
@@ -288,7 +287,7 @@ impl Board {
 
         self.piece.make_move(s);
         self.pawns = !self.piece.location & self.pawns;
-        self.path[self.path.iter().position(|&x| x == 100).unwrap()] = s;
+        // self.path[self.path.iter().position(|&x| x == 100).unwrap()] = s;
 
         Ok(s.into())
     }
@@ -301,7 +300,7 @@ impl Board {
                 Some(x) => {
                     self.pawns = x.pawns;
                     self.piece = x.piece;
-                    self.path = x.path;
+                    // self.path = x.path;
                     // println!("\n{:?}", self.path.iter().filter(|&&x| x != 100).map(|x| *x).collect::<Vec<u8>>());
                     break;
                 },
@@ -311,8 +310,8 @@ impl Board {
     }
 
     fn attempt_path(&mut self, n: usize) -> Option<Board> {
-        let mut b = *self;
-        b.path[0] = b.piece.square as u8;
+        let mut b = self.clone();
+        // b.path[0] = b.piece.square as u8;
 
 
         for i in 1..=n {
@@ -320,7 +319,7 @@ impl Board {
 
             match b.random_move(MoveType::Moves) {
                 Err(_) => {return None},
-                Ok(s) => {b.path[i] = s as u8},
+                Ok(s) => {/* b.path[i] = s as u8 */},
             }
 
             b.pawns |= last_position;
@@ -329,54 +328,107 @@ impl Board {
         Some(b)
     }
 
-    pub fn get_path(&self) -> Vec<u8> {
-        self.path.iter().filter(|&&x| x != 100).map(|x| *x).collect()
-    }
+    // pub fn get_path(&self) -> Vec<u8> {
+    //     self.path.iter().filter(|&&x| x != 100).map(|x| *x).collect()
+    // }
 
-    pub fn random_attempt(&mut self) -> bool {
-        let mut solution: Vec<u8> = self.get_path();
-        solution.reverse();
+    // pub fn random_attempt(&mut self) -> bool {
+    //     let mut solution: Vec<u8> = self.get_path();
+    //     solution.reverse();
 
-        if solution.len() == 0 {
-            println!("Something went wrong!: {:?}\n", solution);
-            println!("{} {}", self.piece.get_row(), self.piece.get_col());
-            println!("{}", self);
-            println!("{:?}", self.path);
+    //     if solution.len() == 0 {
+    //         println!("Something went wrong!: {:?}\n", solution);
+    //         println!("{} {}", self.piece.get_row(), self.piece.get_col());
+    //         println!("{}", self);
+    //         println!("{:?}", self.path);
+    //     }
+
+
+    //     solution.remove(0);
+
+    //     let n = self.pawns.0.count_ones();
+
+    //     for _ in 0..100000 {
+    //         let mut a = Board::init(self.piece, self.pawns);
+    //         let p: Vec<u8>;
+
+    //         loop {
+    //             match a.random_move(MoveType::CapturesOnly) {
+    //                 Err(_) => {p = a.get_path(); break},
+    //                 Ok(_) => {},
+    //             }
+    //         }
+
+    //         if solution.len() < n as usize && a.pawns.0.count_ones() == 0{
+    //             solution = p.to_owned();
+
+    //             for i in solution.clone().into_iter().rev().enumerate() {
+    //                 self.path[i.0] = i.1;
+    //             }  
+    //         }
+
+    //         if p.len() == n as usize && p != solution {
+    //             return false;
+    //         }
+    //     }
+
+    //     true
+    // }
+
+    fn possible_positions(&self, source: Board) -> HashMap<Board, u8> {
+        let mut positions = HashMap::new();
+        
+        for i in source.moves(MoveType::CapturesOnly).to_string().chars().into_iter().enumerate() {
+            if i.1 == '1' {
+                let piece: Piece = Piece::init(source.piece.id, 63-i.0 as u8);
+                let mut pawns = source.pawns;
+    
+                pawns = !piece.location & pawns;
+
+                let board = Board::init(piece, pawns);
+
+                positions.insert(board.clone(), board.pawns.0.count_ones() as u8);
+            }
         }
 
+        positions
+    }
 
-        solution.remove(0);
+    pub fn hash_map_attempt(&mut self) -> bool {
+        let mut tree: HashMap<Board, HashMap<Board, u8>> = HashMap::new();
 
-        let n = self.pawns.0.count_ones();
+        tree.insert(self.clone(), self.possible_positions(self.clone()));
 
-        for _ in 0..100000 {
-            let mut a = Board::init(self.piece, self.pawns);
-            let p: Vec<u8>;
+        let mut zeroes = 0;
 
-            loop {
-                match a.random_move(MoveType::CapturesOnly) {
-                    Err(_) => {p = a.get_path(); break},
-                    Ok(_) => {},
+        for i in (0..self.pawns.0.count_ones()).rev() {
+            for j in tree.clone().into_iter() {
+                for k in j.1.into_iter() {
+                    if k.1 == i as u8 {
+                        tree.insert(k.0.clone(), self.possible_positions(k.0.clone()));
+
+                        if k.1 == 0 {
+                            zeroes += 1;
+                        }
+
+                        if zeroes == 2 {
+                            return false;
+                        }
+                    }
                 }
             }
-
-            if solution.len() < n as usize && a.pawns.0.count_ones() == 0{
-                solution = p.to_owned();
-
-                for i in solution.clone().into_iter().rev().enumerate() {
-                    self.path[i.0] = i.1;
-                }  
-            }
-
-            if p.len() == n as usize && p != solution {
-                return false;
-            }
         }
 
-        true
-    }
+        // for i in tree.clone().into_iter() {
+        //     println!("Top: {}", i.0);
 
-    pub fn hash_map_attempt(&self) -> bool {
+        //     for j in i.1.into_iter() {
+        //         println!("{} n={}", j.0, j.1); 
+        //     }
+        // }
+
+        println!("l: {} z: {}", tree.len(), zeroes);
+
         true
     }
 }

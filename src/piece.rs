@@ -2,7 +2,7 @@
 use crate::BitBoard;
 use std::fmt;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash, Debug)]
 pub enum PieceType {
     Queen,
     Rook,
@@ -21,10 +21,10 @@ impl fmt::Display for PieceType {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash, Debug)]
 pub struct Piece {
     pub type_: PieceType,
-    id: u8,
+    pub id: u8,
     pub location: BitBoard,
     pub square: usize,
 }
