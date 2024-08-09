@@ -99,7 +99,7 @@ impl Not for BitBoard {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash, Debug)]
 pub struct Board {
     pub piece: Piece,
     // pub path: [u8; 64],
@@ -292,20 +292,30 @@ impl Board {
         Ok(s.into())
     }
 
-    pub fn create_path(&mut self, n: usize) {
-        for _ in 1..=10000 {
+    pub fn create_path(&mut self, n: usize, max_tries: Option<usize>) -> Result<usize, String> {
+        let mut i = 0;
+        
+        loop {
             let a = self.attempt_path(n);
 
             match a {
                 Some(x) => {
                     self.pawns = x.pawns;
                     self.piece = x.piece;
-                    // self.path = x.path;
-                    // println!("\n{:?}", self.path.iter().filter(|&&x| x != 100).map(|x| *x).collect::<Vec<u8>>());
-                    break;
+                    
+                    println!("Found candidate position.");
+
+                    return Ok(i);
                 },
                 None => {},
             }
+
+            match max_tries {
+                Some(m) => { if i == m { return Err("No position found".to_string()) } },
+                None => {},
+            }
+
+            i += 1;
         }
     }
 
@@ -328,53 +338,6 @@ impl Board {
         Some(b)
     }
 
-    // pub fn get_path(&self) -> Vec<u8> {
-    //     self.path.iter().filter(|&&x| x != 100).map(|x| *x).collect()
-    // }
-
-    // pub fn random_attempt(&mut self) -> bool {
-    //     let mut solution: Vec<u8> = self.get_path();
-    //     solution.reverse();
-
-    //     if solution.len() == 0 {
-    //         println!("Something went wrong!: {:?}\n", solution);
-    //         println!("{} {}", self.piece.get_row(), self.piece.get_col());
-    //         println!("{}", self);
-    //         println!("{:?}", self.path);
-    //     }
-
-
-    //     solution.remove(0);
-
-    //     let n = self.pawns.0.count_ones();
-
-    //     for _ in 0..100000 {
-    //         let mut a = Board::init(self.piece, self.pawns);
-    //         let p: Vec<u8>;
-
-    //         loop {
-    //             match a.random_move(MoveType::CapturesOnly) {
-    //                 Err(_) => {p = a.get_path(); break},
-    //                 Ok(_) => {},
-    //             }
-    //         }
-
-    //         if solution.len() < n as usize && a.pawns.0.count_ones() == 0{
-    //             solution = p.to_owned();
-
-    //             for i in solution.clone().into_iter().rev().enumerate() {
-    //                 self.path[i.0] = i.1;
-    //             }  
-    //         }
-
-    //         if p.len() == n as usize && p != solution {
-    //             return false;
-    //         }
-    //     }
-
-    //     true
-    // }
-
     fn possible_positions(&self, source: Board) -> HashMap<Board, u8> {
         let mut positions = HashMap::new();
         
@@ -394,30 +357,67 @@ impl Board {
         positions
     }
 
-    pub fn hash_map_attempt(&mut self) -> bool {
+    pub fn find_unique_solution(&mut self) -> bool {
         let mut tree: HashMap<Board, HashMap<Board, u8>> = HashMap::new();
+        let mut transpositions: Vec<u8> = vec![];
 
         tree.insert(self.clone(), self.possible_positions(self.clone()));
 
+        let mut solution: Board = self.clone();
         let mut zeroes = 0;
+
+        println!("Attempting unique solution");
 
         for i in (0..self.pawns.0.count_ones()).rev() {
             for j in tree.clone().into_iter() {
                 for k in j.1.into_iter() {
+                    if k.1 == 0 {
+                        zeroes += 1;
+                        solution = k.0;
+                    }
+
+                    if zeroes == 2 {
+                        println!("Multiple ends found. No unique solution.");
+                        return false;
+                    }
+                    
                     if k.1 == i as u8 {
-                        tree.insert(k.0.clone(), self.possible_positions(k.0.clone()));
-
-                        if k.1 == 0 {
-                            zeroes += 1;
-                        }
-
-                        if zeroes == 2 {
-                            return false;
+                        if tree.contains_key(&k.0.clone()) {
+                            transpositions.push(k.0.piece.square as u8);
+                        } else {
+                            tree.insert(k.0.clone(), self.possible_positions(k.0.clone()));
                         }
                     }
                 }
             }
         }
+
+        let mut path: Vec<u8> = vec![];
+        let mut last: Board = solution;
+
+        println!("Reversing path");
+
+        for _ in 0..self.pawns.0.count_ones() {
+            for i in tree.clone().into_iter() {
+                for j in i.1.into_iter() {
+                    if j.0 == last {
+                        path.push(j.0.piece.square as u8);
+                        last = i.0;
+                    }
+                }
+            }
+        }
+
+        println!("Checking for transpositions");
+
+        for i in path.clone() {
+            if transpositions.contains(&i) {
+                println!("Transposition found. No unique solution.");
+                return false;
+            }
+        }
+
+        println!("All is fine. Unique solution found.");
 
         // for i in tree.clone().into_iter() {
         //     println!("Top: {}", i.0);
@@ -426,6 +426,9 @@ impl Board {
         //         println!("{} n={}", j.0, j.1); 
         //     }
         // }
+
+        println!("{:?}", transpositions);
+        println!("p: {:?}", path);
 
         println!("l: {} z: {}", tree.len(), zeroes);
 

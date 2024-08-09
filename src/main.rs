@@ -9,42 +9,57 @@ use utils::{fen,coordinate};
 
 use rand::Rng;
 
-fn main() {
+fn find_puzzle(n: usize, piece_type: u8, max_tries: Option<usize>) -> Option<Board> {
     let mut rng = rand::thread_rng();
-    use std::time::Instant;
     
+    let mut i = 0;
    
-    for l in 0..1000 {
-        
-        // let mut pawns: BitBoard = BitBoard(1128101618655312);
-        // let mut pawns: BitBoard = BitBoard(541073424);
+    loop {
+        match max_tries {
+            Some(m) => { if i == m { return None } },
+            None => {},
+        }
+
+        i += 1;
+
         let mut pawns: BitBoard = BitBoard(0);
-        let piece: Piece = Piece::init(0, rng.gen_range(0..63));
-        // let piece: Piece = Piece::init(0, 3);
+        // let mut pawns = BitBoard(5490939986534379144);
+        let piece: Piece = Piece::init(piece_type, rng.gen_range(0..63));
+        // let piece: Piece = Piece::init(3, 27);
     
         pawns = !piece.location & pawns;
     
         let mut board: Board = Board::init(piece, pawns);
 
-        let now = Instant::now();
+        match board.create_path(n, max_tries) {
+            Err(_) => {continue},
+            Ok(_) => {},
+        }
 
-        board.create_path(5);
-
-        let elapsed = now.elapsed();
-        println!("Elapsed: {:.2?}", elapsed);
-
-        let now2 = Instant::now();
-
-        let s = board.hash_map_attempt();
-
-        let elapsed2 = now2.elapsed();
-        println!("Elapsed2: {:.2?}", elapsed2);
+        let s = board.find_unique_solution();
 
         if s {
             println!("{}", fen(board.clone()));
-            println!("This has exactly one solution: \n{}\ni: {}", board, l);
+            println!("This has exactly one solution: \n{}\ni: {}", board, i);
             println!("{} {}", board.pawns.0, board.piece.square);
-            break;
+            
+            return Some(board);
         }
-    }
+    }  
+}
+
+fn main() {
+    use std::time::Instant;
+
+    let now = Instant::now();
+
+    // 5490939986534379144
+    // Knight 27
+
+    find_puzzle(20, 3, None);
+
+    let elapsed = now.elapsed();
+
+    println!("Elapsed: {:.2?}", elapsed);
+    
 }
